@@ -106,3 +106,31 @@ Pre-translate hooks that compress `tool_result` content in-place to cut tokens. 
   Règle actée : aucune donnée client sensible sur un palier gratuit sans revue
   des conditions par Christophe. Décision en attente : quels fournisseurs
   autoriser (voir la section « Décision demandée » du document).
+
+- 2026-10-17 - Veille A5 health-check (branche
+  `feat/veille-a5-healthcheck-fournisseurs`, empilee sur
+  `feat/veille-a5-free-llm-apis`) : Christophe autorise tous les
+  fournisseurs gratuits du document **sous condition de validation par
+  test**. Health-check livre (`open-sse/config/freeTierProviders.js`,
+  `open-sse/services/freeTierHealthCheck.js`,
+  `scripts/check-free-tier-providers.mjs`) : sonde minimale sans prompt,
+  cles uniquement par environnement/.env (jamais affichees), seuls les
+  `valid` sont `usableForFreeRouting`, **routage par defaut inchange**.
+  Test reel 2026-10-17 : OVHcloud seul valide (HTTP 200, sans cle) ; les
+  5 autres `untested` (aucune cle dans l'environnement du projet).
+  Etape suivante non faite : brancher ce statut sur le routage.
+
+- 2026-10-18 - Veille A5 health-check, source stockee (meme branche
+  `feat/veille-a5-healthcheck-fournisseurs`) : le lot de connexions du
+  17-10 18:47 (Europe/Berlin) a ete cree par Projet 9ROUTER via l'API
+  locale du dashboard apres accord de Christophe (origine confirmee, pas
+  l'agent veille). Le health-check lit maintenant aussi les connexions
+  actives `apikey` via `getProviderConnections()`
+  (`src/lib/db/repos/connectionsRepo.js`, alias `@/` resolu par
+  `scripts/loaders/src-alias-loader.mjs`), en memoire uniquement, env
+  prioritaire, source affichee (`env`/`stored`/`anonymous`/`none`),
+  mapping noeud custom OVHcloud inclus. Resultats reels 2026-10-18 :
+  OVHcloud, Mistral, Gemini, OpenRouter **valid** (HTTP 200, source
+  stored) ; Groq et Cloudflare `untested` (absents partout). Routage par
+  defaut toujours inchange ; branchement du statut = etape ulterieure.
+
