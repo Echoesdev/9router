@@ -51,6 +51,7 @@ source/*
 .cursor/*
 docs/*
 !docs/ARCHITECTURE.md
+!docs/veille-a5-free-llm-apis.md
 test/*
 open-sse/test/*
 RM.vn.md
