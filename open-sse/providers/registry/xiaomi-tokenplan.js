@@ -50,6 +50,10 @@ export default {
     },
   ],
   models: [
+    // [veille-a9] MiMo V2.6 (PAS V2.5) : doc officielle Token Plan, tous plans v2.6-pro/flash. V2.5 retire le 21 oct. 2026 10:00 Pekin (PAYG) ; entrees V2.5 conservees tant que servies.
+    { id: "mimo-v2.6-pro", name: "MiMo V2.6 Pro" },
+    { id: "mimo-v2.6-pro-claude", name: "MiMo V2.6 Pro (Claude Native)", targetFormat: "claude", upstreamModelId: "mimo-v2.6-pro" },
+    { id: "mimo-v2.6-flash", name: "MiMo V2.6 Flash" },
     { id: "mimo-v2.5-pro", name: "MiMo V2.5 Pro" },
     { id: "mimo-v2.5-pro-claude", name: "MiMo V2.5 Pro (Claude Native)", targetFormat: "claude", upstreamModelId: "mimo-v2.5-pro" },
     { id: "mimo-v2.5", name: "MiMo V2.5" },

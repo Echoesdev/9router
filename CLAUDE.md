@@ -134,3 +134,19 @@ Pre-translate hooks that compress `tool_result` content in-place to cut tokens. 
   stored) ; Groq et Cloudflare `untested` (absents partout). Routage par
   defaut toujours inchange ; branchement du statut = etape ulterieure.
 
+
+- 2026-10-18 - Veille A9 MiMo V2.6 (branche `feat/veille-a9-mimo-v26`,
+  empilee sur `feat/veille-a5-healthcheck-fournisseurs`) : V2.6 etait deja
+  reference et route par `xiaomi-mimo` (cloud + compte Desktop, executor
+  dedie teste) ; le trou etait `xiaomi-tokenplan`, qui ne listait que
+  V2.5/V2 alors que la doc officielle Token Plan supporte v2.6-pro/flash.
+  Ajout de `mimo-v2.6-pro`, `mimo-v2.6-pro-claude`, `mimo-v2.6-flash` en
+  tete du catalogue Token Plan (+ `tests/unit/xiaomi-mimo-v26.test.js`,
+  reseau simule ; fiche `docs/veille-a9-mimo-v26.md`). MiMo est PAYANT
+  (PAYG ou Token Plan 6-100 $/mois) : volontairement NON ajoute au
+  health-check gratuit veille-a5. Aucune connexion MiMo stockee dans
+  9Router (verification metadonnees 2026-10-18), solde PAYG suppose 0
+  (Projet 9ROUTER) : aucun appel reel fait. Sunset V2.5 le 21 oct. 2026
+  10:00 Pekin : ne jamais brancher V2.5 pour un nouvel usage. Decision en
+  attente : recharger PAYG / souscrire Token Plan Lite, ou rester en
+  referencement seul. Routage par defaut inchange.
