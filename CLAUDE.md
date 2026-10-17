@@ -106,3 +106,17 @@ Pre-translate hooks that compress `tool_result` content in-place to cut tokens. 
   Règle actée : aucune donnée client sensible sur un palier gratuit sans revue
   des conditions par Christophe. Décision en attente : quels fournisseurs
   autoriser (voir la section « Décision demandée » du document).
+
+- 2026-10-17 - Veille A5 health-check (branche
+  `feat/veille-a5-healthcheck-fournisseurs`, empilee sur
+  `feat/veille-a5-free-llm-apis`) : Christophe autorise tous les
+  fournisseurs gratuits du document **sous condition de validation par
+  test**. Health-check livre (`open-sse/config/freeTierProviders.js`,
+  `open-sse/services/freeTierHealthCheck.js`,
+  `scripts/check-free-tier-providers.mjs`) : sonde minimale sans prompt,
+  cles uniquement par environnement/.env (jamais affichees), seuls les
+  `valid` sont `usableForFreeRouting`, **routage par defaut inchange**.
+  Test reel 2026-10-17 : OVHcloud seul valide (HTTP 200, sans cle) ; les
+  5 autres `untested` (aucune cle dans l'environnement du projet).
+  Etape suivante non faite : brancher ce statut sur le routage.
+

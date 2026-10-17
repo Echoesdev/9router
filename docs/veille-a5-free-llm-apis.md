@@ -154,3 +154,73 @@ Christophe doit indiquer, fournisseur par fournisseur :
   sont ceux cités en notes de bas de page de cette source ; ils restent à
   revérifier au moment de la décision, les paliers gratuits changeant sans
   préavis.
+
+## Decision enregistree (2026-10-17, Europe/Berlin)
+
+Christophe autorise **tous** les fournisseurs gratuits listes ci-dessus,
+a condition qu'ils soient **valides par le health-check** ci-dessous.
+Un fournisseur non teste ou en echec n'est pas considere comme utilisable.
+Cette autorisation ne leve pas les risques signales par fournisseur
+(entrainement, retention, clause EEE de Gemini, enregistrement OpenRouter) :
+aucune donnee client sensible sur un palier gratuit sans la revue prevue,
+et l'usage reste les tests sur donnees fictives/publiques tant que cette
+revue n'est pas archivee.
+
+## Health-check automatique (branche feat/veille-a5-healthcheck-fournisseurs)
+
+Fonction livree, sans aucun changement du routage par defaut :
+
+- `open-sse/config/freeTierProviders.js` : liste blanche des 6 sondes
+  (URL figee https, noms de variables d'environnement, aucune cle).
+- `open-sse/services/freeTierHealthCheck.js` : `checkFreeTierProvider` et
+  `checkAllFreeTierProviders`. Resultat structure par fournisseur :
+  `valid` / `failed` (raison courte, sans secret) / `untested` (cle
+  absente), avec `checkedAt`, `httpStatus`, `latencyMs` et
+  `usableForFreeRouting` (vrai uniquement si `valid`).
+- `scripts/check-free-tier-providers.mjs` : point d'entree documente.
+
+Lancement :
+
+```powershell
+# Cles via l'environnement ou le fichier .env local (jamais commite)
+node scripts/check-free-tier-providers.mjs
+node scripts/check-free-tier-providers.mjs --json
+node scripts/check-free-tier-providers.mjs --only ovhcloud-ai-endpoints,groq
+node scripts/check-free-tier-providers.mjs --timeout 5000 --out rapport.json
+```
+
+Code de sortie : 0 si aucun fournisseur teste n'a echoue, 1 sinon.
+Sondes minimales (liste des modeles, ou validation de cle OpenRouter) :
+aucun prompt, aucune donnee client. Timeout court (8 s par defaut),
+execution sequentielle (OVHcloud anonyme : 2 req/min/IP/modele).
+
+Variables attendues : `MISTRAL_API_KEY`, `GEMINI_API_KEY` (ou
+`GOOGLE_API_KEY`), `CLOUDFLARE_API_TOKEN` (ou `CLOUDFLARE_API_KEY`) +
+`CLOUDFLARE_ACCOUNT_ID`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`.
+OVHcloud ne demande aucune cle.
+
+### Resultats reels (2026-10-17 18:45 Europe/Berlin)
+
+Environnement du projet sur le PC : aucune des cles ci-dessus presente
+(ni environnement processus, ni `.env`), donc un seul test reel possible.
+
+| Fournisseur | Resultat reel | Detail |
+|---|---|---|
+| OVHcloud AI Endpoints | **valid** | HTTP 200, 158 ms, sans cle |
+| Mistral AI | untested | cle absente |
+| Google Gemini | untested | cle absente |
+| Cloudflare Workers AI | untested | cle + account id absents |
+| Groq | untested | cle absente |
+| OpenRouter (:free) | untested | cle absente |
+
+Seul `ovhcloud-ai-endpoints` est donc marque utilisable pour le routage
+gratuit a ce jour. Relancer la commande apres avoir fourni les cles par
+l'environnement validera (ou non) les cinq autres, sans changer le code.
+
+### Etape suivante (non faite, a valider separement)
+
+Brancher `usableForFreeRouting` sur le routage par defaut de 9Router
+n'est **pas** fait : le health-check expose seulement le statut. Le
+branchement, son cache/TTL et son comportement quand un fournisseur
+valide tombe ensuite en panne demandent une branche dediee et une revue
+securite (stockage des cles, fuites, SSRF) conforme a `CLAUDE.md`.
