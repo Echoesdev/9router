@@ -224,3 +224,55 @@ n'est **pas** fait : le health-check expose seulement le statut. Le
 branchement, son cache/TTL et son comportement quand un fournisseur
 valide tombe ensuite en panne demandent une branche dediee et une revue
 securite (stockage des cles, fuites, SSRF) conforme a `CLAUDE.md`.
+
+## Mise a jour 2026-10-18 : source "connexions stockees 9Router"
+
+L'origine du lot de connexions cree le 17-10-2026 vers 18:47
+(Europe/Berlin) est eclairee : Projet 9ROUTER confirme les avoir creees et
+branchees via l'API locale du dashboard apres l'accord de Christophe
+("ok continue tout seul sur ce projet"). Aucune cle n'a ete creee par
+l'agent veille A5, qui n'avait fait que documenter.
+
+Le health-check lit donc desormais **aussi** ces connexions, en plus de
+l'environnement/.env (prioritaire) :
+
+- Lecture via le mecanisme officiel `getProviderConnections()`
+  (`src/lib/db/repos/connectionsRepo.js`), connexions actives de type
+  `apikey` uniquement, valeurs **en memoire seulement** : jamais
+  affichees, journalisees, retournees ni commitees. Le resultat n'indique
+  que la source : `env`, `stored`, `anonymous` ou `none`.
+- Mapping : `mistral`, `gemini`, `openrouter`, `groq`, `cloudflare-ai`
+  (avec account id stocke), et le noeud custom **OVHcloud**
+  (`openai-compatible-chat-*` dont le noeud s'appelle OVHcloud ; URL de
+  base stockee validee en https sans identifiants avant usage, jamais
+  affichee).
+- Plusieurs connexions pour un meme fournisseur sont essayees dans
+  l'ordre de priorite 9Router jusqu'au premier succes (champ `attempts`).
+- `--no-stored` desactive cette source. Si la base est illisible, le
+  script continue avec la seule source environnement (`storedSource:
+  "unavailable"` dans le rapport JSON).
+- Pour les scripts Node autonomes, l'alias `@/` du depot est resolu par
+  `scripts/loaders/src-alias-loader.mjs`.
+
+### Resultats reels (2026-10-18 01:27 Europe/Berlin, source stockee)
+
+Sondes minimales, donnees fictives uniquement, aucune donnee client :
+
+| Fournisseur | Resultat reel | Detail |
+|---|---|---|
+| OVHcloud AI Endpoints | **valid** | HTTP 200, 167 ms, source stored (noeud custom) |
+| Mistral AI | **valid** | HTTP 200, 285 ms, source stored |
+| Google Gemini | **valid** | HTTP 200, 105 ms, source stored |
+| OpenRouter (:free) | **valid** | HTTP 200, 330 ms, source stored (validation de cle) |
+| Cloudflare Workers AI | untested | absent : ni env, ni connexion stockee |
+| Groq | untested | absent : ni env, ni connexion stockee |
+
+Un second run en `--json` a confirme les 4 `valid` (latences 46 a 148 ms).
+Utilisables pour le routage gratuit au sens du health-check :
+`ovhcloud-ai-endpoints`, `mistral`, `gemini`, `openrouter-free`.
+Le routage par defaut de 9Router reste **inchange** : ce statut n'est
+toujours pas branche dessus.
+
+Restent a creer (par Christophe, dans les consoles fournisseurs, puis
+saisie dans le dashboard 9Router) : les cles Groq et Cloudflare.
+

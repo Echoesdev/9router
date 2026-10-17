@@ -7,6 +7,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   checkFreeTierProvider,
   checkAllFreeTierProviders,
+  buildStoredProviderCandidates,
   FREE_TIER_PROVIDERS,
 } from "../../open-sse/services/freeTierHealthCheck.js";
 
@@ -185,3 +186,118 @@ describe("checkAllFreeTierProviders", () => {
     expect(report.providers.map((p) => p.id)).toEqual(["ovhcloud-ai-endpoints"]);
   });
 });
+
+describe("stored 9Router connections source", () => {
+  const storedConn = (overrides = {}) => ({
+    provider: "mistral",
+    authType: "apikey",
+    isActive: true,
+    apiKey: FAKE_KEY,
+    providerSpecificData: {},
+    ...overrides,
+  });
+
+  it("uses a stored connection when the env key is absent", async () => {
+    const capture = [];
+    const result = await checkFreeTierProvider(specById("mistral"), {
+      fetchFn: okFetch(capture),
+      env: {},
+      connections: [storedConn()],
+      now: fixedNow,
+    });
+    expect(result.status).toBe("valid");
+    expect(result.source).toBe("stored");
+    expect(capture[0].init.headers.Authorization).toBe(`Bearer ${FAKE_KEY}`);
+    expect(JSON.stringify(result)).not.toContain(FAKE_KEY);
+  });
+
+  it("ignores inactive stored connections", async () => {
+    const fetchFn = vi.fn();
+    const result = await checkFreeTierProvider(specById("mistral"), {
+      fetchFn,
+      env: {},
+      connections: [storedConn({ isActive: false })],
+      now: fixedNow,
+    });
+    expect(result.status).toBe("untested");
+    expect(result.source).toBe("none");
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("ignores non-apikey and keyless stored connections", async () => {
+    const candidates = buildStoredProviderCandidates([
+      storedConn({ authType: "oauth", apiKey: null }),
+      storedConn({ apiKey: "   " }),
+      storedConn({ provider: "groq", apiKey: FAKE_KEY }),
+    ]);
+    expect(candidates.mistral).toBeUndefined();
+    expect(candidates.groq).toHaveLength(1);
+    expect(JSON.stringify(Object.keys(candidates))).not.toContain(FAKE_KEY);
+  });
+
+  it("prefers the env key over a stored connection", async () => {
+    const capture = [];
+    const result = await checkFreeTierProvider(specById("groq"), {
+      fetchFn: okFetch(capture),
+      env: { GROQ_API_KEY: "env-key-first" },
+      connections: [storedConn({ provider: "groq" })],
+      now: fixedNow,
+    });
+    expect(result.source).toBe("env");
+    expect(capture[0].init.headers.Authorization).toBe("Bearer env-key-first");
+  });
+
+  it("tries the next stored connection when the first one fails", async () => {
+    let call = 0;
+    const result = await checkFreeTierProvider(specById("gemini"), {
+      fetchFn: vi.fn(async () => (++call === 1 ? { ok: false, status: 401 } : { ok: true, status: 200 })),
+      env: {},
+      connections: [
+        storedConn({ provider: "gemini", apiKey: "first-bad-key" }),
+        storedConn({ provider: "gemini", apiKey: FAKE_KEY }),
+      ],
+      now: fixedNow,
+    });
+    expect(result.status).toBe("valid");
+    expect(result.attempts).toBe(2);
+    expect(JSON.stringify(result)).not.toContain(FAKE_KEY);
+    expect(JSON.stringify(result)).not.toContain("first-bad-key");
+  });
+
+  it("maps the custom OVHcloud node to a validated probe URL, never displayed", async () => {
+    const capture = [];
+    const result = await checkFreeTierProvider(specById("ovhcloud-ai-endpoints"), {
+      fetchFn: okFetch(capture),
+      env: {},
+      connections: [
+        storedConn({
+          provider: "openai-compatible-chat-00000000-0000-0000-0000-000000000000",
+          name: "OVHcloud 9router",
+          providerSpecificData: {
+            nodeName: "OVHcloud",
+            baseUrl: "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1",
+          },
+        }),
+      ],
+      now: fixedNow,
+    });
+    expect(result.status).toBe("valid");
+    expect(result.source).toBe("stored");
+    expect(capture[0].url).toBe("https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/models");
+    expect(JSON.stringify(result)).not.toContain(FAKE_KEY);
+  });
+
+  it("rejects a stored OVHcloud probe URL that is not clean https", async () => {
+    const candidates = buildStoredProviderCandidates([
+      storedConn({
+        provider: "openai-compatible-chat-00000000-0000-0000-0000-000000000000",
+        providerSpecificData: {
+          nodeName: "OVHcloud",
+          baseUrl: "http://user:pass@example.invalid/v1",
+        },
+      }),
+    ]);
+    expect(candidates["ovhcloud-ai-endpoints"][0].probeUrl).toBeNull();
+  });
+});
+
