@@ -52,6 +52,7 @@ source/*
 docs/*
 !docs/ARCHITECTURE.md
 !docs/veille-a5-free-llm-apis.md
+!docs/veille-a9-mimo-v26.md
 test/*
 open-sse/test/*
 RM.vn.md
