@@ -134,3 +134,17 @@ Pre-translate hooks that compress `tool_result` content in-place to cut tokens. 
   stored) ; Groq et Cloudflare `untested` (absents partout). Routage par
   defaut toujours inchange ; branchement du statut = etape ulterieure.
 
+- 2026-10-18 - Veille economie de tokens (branche
+  `feat/veille-economie-tokens`, empilee sur
+  `feat/veille-a5-healthcheck-fournisseurs`) : etat des lieux dans
+  `docs/veille-economie-tokens-9router.md`. Constat : RTK (compression
+  tool_result) est deja actif par defaut (`rtkEnabled: true`) ;
+  caveman/ponytail/headroom/pxpipe existent mais sont desactives.
+  Ajout documentaire et opt-in, branche sur aucun routage :
+  `open-sse/config/tokenSaverProfiles.js` (profils eco/equilibre/qualite,
+  modeles sobres, budgets de sortie) + tests
+  `tests/unit/token-saver-profiles.test.js`. Seuls les fournisseurs
+  valides le 2026-10-18 (OVHcloud, Mistral, Gemini, OpenRouter) figurent
+  dans les profils ; Groq/Cloudflare exclus (non testes). **Routage par
+  defaut toujours inchange** ; appliquer un profil = geste manuel dans
+  le dashboard, decision ulterieure de Christophe.
